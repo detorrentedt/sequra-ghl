@@ -1,3 +1,6 @@
+Aquí está el contenido completo. Cópialo todo:
+
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -68,39 +71,148 @@
 </div>
 
 <script>
-const PROGRAMAS = {
+var PROGRAMAS = {
   'metodo-alimentarte': {
-    nombre: 'Método Alimentarte',
+    nombre: 'Metodo Alimentarte',
     precio: 2400,
     cuotasMax: 12,
-    descripcionCuotas: 'Paga hasta en <strong>12 meses</strong> sin complicaciones'
+    descripcionCuotas: 'Paga hasta en 12 meses sin complicaciones'
   },
   'resetea-tu-salud': {
     nombre: 'Resetea tu Salud',
     precio: 1200,
     cuotasMax: 12,
-    descripcionCuotas: 'Paga hasta en <strong>12 meses</strong> sin complicaciones'
+    descripcionCuotas: 'Paga hasta en 12 meses sin complicaciones'
   },
   'hipopresivos': {
     nombre: 'Curso Hipopresivos',
     precio: 222,
     cuotasMax: 4,
-    descripcionCuotas: 'Paga hasta en <strong>4 cuotas</strong> cómodamente'
+    descripcionCuotas: 'Paga hasta en 4 cuotas comodamente'
   },
   'recupera-calma': {
     nombre: 'Recupera tu Estado Natural de Calma',
     precio: 97,
     cuotasMax: 2,
-    descripcionCuotas: 'Paga en <strong>2 cómodos plazos</strong>'
+    descripcionCuotas: 'Paga en 2 comodos plazos'
   }
 };
 
-const params = new URLSearchParams(location.search);
-const slug = params.get('programa') || '';
-const programa = PROGRAMAS[slug];
-const content = document.getElementById('content');
+var params = new URLSearchParams(location.search);
+var slug = params.get('programa') || '';
+var programa = PROGRAMAS[slug];
+var content = document.getElementById('content');
 
 if (!programa) {
   content.innerHTML = '<div class="not-found">Programa no encontrado.<br>Contacta con nosotros para obtener tu enlace personalizado.</div>';
 } else {
-  const cuotaAprox = (programa.precio / programa.cuotasMax).toFixed
+  var cuotaAprox = Math.round(programa.precio / programa.cuotasMax);
+  var html = '<div class="program-name">' + programa.nombre + '</div>';
+  html += '<div class="price-row">';
+  html += '<span class="price">' + programa.precio.toLocaleString('es-ES') + '&euro;</span>';
+  html += '<span class="badge">Pago fraccionado</span>';
+  html += '</div>';
+  html += '<div class="cuotas-info">' + programa.descripcionCuotas + ' &mdash; desde <strong>' + cuotaAprox + '&euro;/mes</strong></div>';
+  html += '<hr/>';
+  html += '<form id="payForm">';
+  html += '<div class="row">';
+  html += '<div><label>Nombre *</label><input type="text" name="firstName" required placeholder="Maria" /></div>';
+  html += '<div><label>Apellidos *</label><input type="text" name="lastName" required placeholder="Garcia Lopez" /></div>';
+  html += '</div>';
+  html += '<label>Email *</label>';
+  html += '<input type="email" name="email" required placeholder="maria@ejemplo.com" />';
+  html += '<label>Telefono movil *</label>';
+  html += '<input type="tel" name="phone" required placeholder="+34 612 345 678" />';
+  html += '<label>DNI / NIE *</label>';
+  html += '<input type="text" name="dni" required placeholder="12345678A" maxlength="9" />';
+  html += '<p class="hint">Necesario para la verificacion de Sequra</p>';
+  html += '<label>Fecha de nacimiento *</label>';
+  html += '<input type="date" name="dob" required />';
+  html += '<label>Direccion *</label>';
+  html += '<input type="text" name="address" required placeholder="Calle Mayor 1, 2A" />';
+  html += '<div class="row">';
+  html += '<div><label>Codigo postal *</label><input type="text" name="postalCode" required placeholder="28001" maxlength="5" /></div>';
+  html += '<div><label>Ciudad *</label><input type="text" name="city" required placeholder="Madrid" /></div>';
+  html += '</div>';
+  html += '<div class="error-msg" id="errorMsg"></div>';
+  html += '<button type="submit" class="btn" id="submitBtn">Continuar al pago fraccionado &rarr;</button>';
+  html += '<div class="loading" id="loading">Conectando con Sequra...</div>';
+  html += '</form>';
+  html += '<p class="sequra-note">Financiacion gestionada por SeQura</p>';
+  content.innerHTML = html;
+
+  document.getElementById('payForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var form = e.target;
+    var btn = document.getElementById('submitBtn');
+    var loading = document.getElementById('loading');
+    var errorMsg = document.getElementById('errorMsg');
+
+    btn.disabled = true;
+    btn.style.display = 'none';
+    loading.style.display = 'block';
+    errorMsg.style.display = 'none';
+
+    var orderId = 'ORD-' + Date.now();
+
+    var payload = {
+      order: {
+        id: orderId,
+        total: programa.precio * 100,
+        cuotasMax: programa.cuotasMax,
+        items: [{
+          id: slug,
+          name: programa.nombre,
+          price: programa.precio * 100,
+          quantity: 1
+        }]
+      },
+      customer: {
+        firstName: form.firstName.value.trim(),
+        lastName: form.lastName.value.trim(),
+        email: form.email.value.trim(),
+        phone: form.phone.value.trim(),
+        dni: form.dni.value.trim().toUpperCase(),
+        dob: form.dob.value,
+        address: form.address.value.trim(),
+        postalCode: form.postalCode.value.trim(),
+        city: form.city.value.trim(),
+        ip: '1.2.3.4',
+        userAgent: navigator.userAgent
+      }
+    };
+
+    fetch('/api/init', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data.formHtml) {
+        var wrapper = document.createElement('div');
+        wrapper.innerHTML = data.formHtml;
+        document.body.appendChild(wrapper);
+        setTimeout(function() {
+          if (window.SequraFormInstance) {
+            window.SequraFormInstance.show();
+          }
+        }, 300);
+      } else {
+        throw new Error(data.error || 'Error al cargar el formulario de Sequra');
+      }
+    })
+    .catch(function(err) {
+      console.error(err);
+      errorMsg.textContent = 'Error: ' + err.message;
+      errorMsg.style.display = 'block';
+      btn.disabled = false;
+      btn.style.display = 'block';
+      loading.style.display = 'none';
+    });
+  });
+}
+</script>
+</body>
+</html>
+```
