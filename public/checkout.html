@@ -1,14 +1,106 @@
-if (data.formHtml) {
-        // Inyectar el formulario de Sequra en la página
-        const wrapper = document.createElement('div');
-        wrapper.innerHTML = data.formHtml;
-        document.body.appendChild(wrapper);
-        // Mostrar el formulario
-        setTimeout(() => {
-          if (window.SequraFormInstance) {
-            window.SequraFormInstance.show();
-          }
-        }, 300);
-      } else {
-        throw new Error(data.error || 'Error al cargar el formulario');
-      }
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pago fraccionado — UNODEOCHO</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      max-width: 520px;
+      width: 100%;
+      padding: 40px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+    .logo { font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #888; text-transform: uppercase; margin-bottom: 28px; }
+    .program-name { font-size: 22px; font-weight: 700; color: #111; margin-bottom: 6px; }
+    .price-row { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+    .price { font-size: 32px; font-weight: 800; color: #111; }
+    .badge { background: #e8f5e9; color: #2e7d32; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
+    .cuotas-info { font-size: 14px; color: #666; margin-bottom: 28px; }
+    .cuotas-info strong { color: #111; }
+    hr { border: none; border-top: 1px solid #eee; margin-bottom: 28px; }
+    label { display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 6px; }
+    input {
+      width: 100%; padding: 12px 14px;
+      border: 1.5px solid #ddd; border-radius: 8px;
+      font-size: 15px; color: #111;
+      margin-bottom: 16px;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    input:focus { border-color: #111; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .hint { font-size: 11px; color: #999; margin-top: -12px; margin-bottom: 16px; }
+    .btn {
+      width: 100%; padding: 16px;
+      background: #111; color: white;
+      border: none; border-radius: 10px;
+      font-size: 16px; font-weight: 700;
+      cursor: pointer; margin-top: 8px;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #333; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+    .sequra-note { text-align: center; font-size: 12px; color: #aaa; margin-top: 16px; }
+    .error-msg { color: #c62828; font-size: 13px; margin-top: -12px; margin-bottom: 16px; display: none; }
+    .loading { display: none; text-align: center; padding: 16px; color: #666; font-size: 14px; }
+    .not-found { text-align: center; padding: 40px 0; color: #999; font-size: 15px; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">UNODEOCHO</div>
+  <div id="content">
+    <div class="not-found">Cargando programa...</div>
+  </div>
+</div>
+
+<script>
+const PROGRAMAS = {
+  'metodo-alimentarte': {
+    nombre: 'Método Alimentarte',
+    precio: 2400,
+    cuotasMax: 12,
+    descripcionCuotas: 'Paga hasta en <strong>12 meses</strong> sin complicaciones'
+  },
+  'resetea-tu-salud': {
+    nombre: 'Resetea tu Salud',
+    precio: 1200,
+    cuotasMax: 12,
+    descripcionCuotas: 'Paga hasta en <strong>12 meses</strong> sin complicaciones'
+  },
+  'hipopresivos': {
+    nombre: 'Curso Hipopresivos',
+    precio: 222,
+    cuotasMax: 4,
+    descripcionCuotas: 'Paga hasta en <strong>4 cuotas</strong> cómodamente'
+  },
+  'recupera-calma': {
+    nombre: 'Recupera tu Estado Natural de Calma',
+    precio: 97,
+    cuotasMax: 2,
+    descripcionCuotas: 'Paga en <strong>2 cómodos plazos</strong>'
+  }
+};
+
+const params = new URLSearchParams(location.search);
+const slug = params.get('programa') || '';
+const programa = PROGRAMAS[slug];
+const content = document.getElementById('content');
+
+if (!programa) {
+  content.innerHTML = '<div class="not-found">Programa no encontrado.<br>Contacta con nosotros para obtener tu enlace personalizado.</div>';
+} else {
+  const cuotaAprox = (programa.precio / programa.cuotasMax).toFixed
