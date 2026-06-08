@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   const returnUrl = `${baseUrl}/api/return?orderId=${order.id}`;
   try {
     const { orderUrl } = await startSolicitation({ order, customer, ipnUrl, returnUrl });
-    const formHtml = await fetchForm(orderUrl, order.cuotasMax || 12);
+    const formHtml = await fetchForm(orderUrl, order.cuotasMax || 12, returnUrl);
     return res.status(200).json({ formHtml });
   } catch (err) {
     console.error('Error init:', err.message);
