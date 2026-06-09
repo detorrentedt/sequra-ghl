@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -188,14 +187,29 @@ if (!programa) {
     .then(function(res) { return res.json(); })
     .then(function(data) {
       if (data.formHtml) {
-        var wrapper = document.createElement('div');
-        wrapper.innerHTML = data.formHtml;
-        document.body.appendChild(wrapper);
-        setTimeout(function() {
-          if (window.SequraFormInstance) {
-            window.SequraFormInstance.show();
+        var temp = document.createElement('div');
+        temp.innerHTML = data.formHtml;
+
+        Array.from(temp.childNodes).forEach(function(node) {
+          if (node.nodeName === 'SCRIPT') {
+            var script = document.createElement('script');
+            if (node.getAttribute && node.getAttribute('src')) {
+              script.src = node.getAttribute('src');
+              script.onload = function() {
+                setTimeout(function() {
+                  if (window.SequraFormInstance) {
+                    window.SequraFormInstance.show();
+                  }
+                }, 100);
+              };
+            } else {
+              script.textContent = node.textContent;
+            }
+            document.body.appendChild(script);
+          } else if (node.nodeType === 1) {
+            document.body.appendChild(node.cloneNode(true));
           }
-        }, 300);
+        });
       } else {
         throw new Error(data.error || 'Error al cargar el formulario de Sequra');
       }
@@ -213,4 +227,3 @@ if (!programa) {
 </script>
 </body>
 </html>
-```
